@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>2140 Canton Road — Improvement Cost Estimator</title>
+<link href="https://fonts.googleapis.com/css2?family=Karla:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --charcoal: #25282a;
+    --slate: #5b6770;
+    --light-gray: #c1c6c8;
+    --blue: #0057b8;
+    --blue-dark: #00429a;
+    --bg: #f5f6f7;
+    --white: #ffffff;
+    --success: #2e7d32;
+    --warning: #e65100;
+    --card-shadow: 0 2px 12px rgba(37,40,42,0.08);
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Karla', sans-serif;
+    background: var(--bg);
+    color: var(--charcoal);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--charcoal);
+    color: white;
+    padding: 20px 16px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .header h1 {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+  }
+  .header .sub {
+    font-size: 12px;
+    color: var(--light-gray);
+    margin-top: 3px;
+    font-weight: 400;
+  }
+  .irep-badge {
+    background: var(--blue);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* TOTAL BANNER */
+  .total-banner {
+    background: var(--blue);
+    color: white;
+    padding: 16px;
+    text-align: center;
+    border-bottom: 3px solid var(--blue-dark);
+  }
+  .total-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    opacity: 0.85;
+    margin-bottom: 4px;
+  }
+  .total-amount {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .total-psf {
+    font-size: 13px;
+    opacity: 0.8;
+    margin-top: 5px;
+  }
+
+  /* MAIN CONTENT */
+  .content {
+    padding: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* SECTION HEADERS */
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin: 20px 0 10px;
+    padding-left: 2px;
+  }
+
+  /* LINE ITEM CARDS */
+  .item-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(193,198,200,0.4);
+  }
+  .item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px 10px;
+    cursor: pointer;
+    user-select: none;
+    gap: 8px;
+  }
+  .item-header:active { background: rgba(0,87,184,0.03); }
+  .item-left { flex: 1; min-width: 0; }
+  .item-desc {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--charcoal);
+    line-height: 1.3;
+  }
+  .item-meta {
+    font-size: 11px;
+    color: var(--slate);
+    margin-top: 3px;
+    font-weight: 400;
+  }
+  .item-right { text-align: right; flex-shrink: 0; }
+  .item-cost {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--charcoal);
+    letter-spacing: -0.01em;
+  }
+  .item-cost.editing { color: var(--blue); }
+
+  .rating-chip {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-top: 4px;
+  }
+  .rating-chip.conservative { background: #e8f5e9; color: #2e7d32; }
+  .rating-chip.moderate { background: #fff3e0; color: #e65100; }
+  .rating-chip.aggressive { background: #fce4ec; color: #c62828; }
+
+  .expand-icon {
+    font-size: 16px;
+    color: var(--light-gray);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .item-card.open .expand-icon { transform: rotate(180deg); }
+
+  /* EDIT PANEL */
+  .edit-panel {
+    display: none;
+    padding: 0 14px 14px;
+    border-top: 1px solid rgba(193,198,200,0.4);
+    background: #fafbfc;
+  }
+  .item-card.open .edit-panel { display: block; }
+
+  .edit-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .edit-group {
+    flex: 1;
+    min-width: 100px;
+  }
+  .edit-group.full { flex: 100%; }
+  .edit-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin-bottom: 5px;
+    display: block;
+  }
+  .edit-input {
+    width: 100%;
+    border: 1.5px solid var(--light-gray);
+    border-radius: 6px;
+    padding: 9px 10px;
+    font-family: 'Karla', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--charcoal);
+    background: white;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .edit-input:focus { border-color: var(--blue); }
+  select.edit-input { cursor: pointer; }
+
+  .notes-text {
+    font-size: 15px;
+    color: var(--slate);
+    line-height: 1.5;
+    margin-top: 12px;
+    padding: 9px 10px;
+    background: rgba(193,198,200,0.15);
+    border-radius: 6px;
+    font-style: italic;
+  }
+
+  .delete-btn {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px;
+    background: transparent;
+    border: 1.5px solid #ffcdd2;
+    color: #c62828;
+    font-family: 'Karla', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .delete-btn:active { background: #ffebee; }
+
+  /* ADD NEW ITEM */
+  .add-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 10px;
+    border: 1.5px dashed var(--light-gray);
+    overflow: hidden;
+  }
+  .add-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    cursor: pointer;
+    color: var(--blue);
+    font-size: 14px;
+    font-weight: 600;
+    user-select: none;
+  }
+  .add-toggle:active { background: rgba(0,87,184,0.04); }
+  .add-toggle .plus {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 300;
+    flex-shrink: 0;
+  }
+  .add-form {
+    display: none;
+    padding: 0 14px 14px;
+    border-top: 1px solid rgba(193,198,200,0.4);
+  }
+  .add-card.open .add-form { display: block; }
+
+  .save-btn {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 13px;
+    background: var(--blue);
+    color: white;
+    font-family: 'Karla', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .save-btn:active { background: var(--blue-dark); }
+
+  /* SUMMARY CHART */
+  .summary-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    padding: 16px 14px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(193,198,200,0.4);
+  }
+  .pie-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .pie-canvas-wrap {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    flex-shrink: 0;
+  }
+  .pie-canvas-wrap canvas { display: block; }
+  .pie-center-label {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .pie-center-label .pcl-amount {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--charcoal);
+    line-height: 1.1;
+  }
+  .pie-center-label .pcl-label {
+    font-size: 9px;
+    color: var(--slate);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .pie-legend {
+    width: 100%;
+  }
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(193,198,200,0.25);
+  }
+  .legend-row:last-child { border-bottom: none; }
+  .legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .legend-desc {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--charcoal);
+    line-height: 1.2;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .legend-pct {
+    font-size: 11px;
+    color: var(--slate);
+    font-weight: 600;
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .legend-amt {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--charcoal);
+    width: 68px;
+    text-align: right;
+    flex-shrink: 0;
+    letter-spacing: -0.01em;
+  }
+
+  /* FOOTER */
+  .footer {
+    padding: 20px 16px 32px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--light-gray);
+    letter-spacing: 0.03em;
+  }
+  .footer strong { color: var(--slate); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--charcoal);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header h1" style="font-size:17px;font-weight:700;">2140 Canton Road</div>
+      <div class="sub">Anticipated Improvement Cost Estimator</div>
+    </div>
+    <div class="irep-badge">IREP</div>
+  </div>
+</div>
+
+<div class="total-banner">
+  <div class="total-label">Total Estimated Cost</div>
+  <div class="total-amount" id="grandTotal">$0</div>
+  <div class="total-psf" id="grandTotalPsf">— per SF (13,603 RSF)</div>
+</div>
+
+<div class="content">
+
+  <div class="section-title">Cost Breakdown — Visual</div>
+  <div class="summary-card" id="summaryChart"></div>
+
+  <div class="section-title">Line Items — Tap to Edit</div>
+  <div id="itemsContainer"></div>
+
+  <!-- ADD NEW ITEM -->
+  <div class="add-card" id="addCard">
+    <div class="add-toggle" onclick="toggleAdd()">
+      <div class="plus">+</div>
+      Add New Line Item
+    </div>
+    <div class="add-form" id="addForm">
+      <div class="edit-row">
+        <div class="edit-group full">
+          <label class="edit-label">Description</label>
+          <input class="edit-input" id="new-desc" type="text" placeholder="e.g. HVAC Replacement" />
+        </div>
+      </div>
+      <div class="edit-row">
+        <div class="edit-group">
+          <label class="edit-label">Area / Zone</label>
+          <input class="edit-input" id="new-area" type="text" placeholder="e.g. Bldg 200" />
+        </div>
+        <div class="edit-group">
+          <label class="edit-label">SF (if $/SF)</label>
+          <input class="edit-input" id="new-sf" type="number" placeholder="e.g. 9418" inputmode="numeric" />
+        </div>
+      </div>
+      <div class="edit-row">
+        <div class="edit-group">
+          <label class="edit-label">Cost Mode</label>
+          <select class="edit-input" id="new-mode" onchange="toggleNewMode()">
+            <option value="psf">$/SF Rate</option>
+            <option value="fixed">Fixed Amount</option>
+          </select>
+        </div>
+        <div class="edit-group" id="new-psf-group">
+          <label class="edit-label">$/SF Rate</label>
+          <input class="edit-input" id="new-psf-val" type="number" step="0.01" placeholder="0.00" inputmode="decimal" />
+        </div>
+        <div class="edit-group" id="new-fixed-group" style="display:none;">
+          <label class="edit-label">Fixed $</label>
+          <input class="edit-input" id="new-fixed-val" type="number" step="100" placeholder="0" inputmode="numeric" />
+        </div>
+      </div>
+      <div class="edit-row">
+        <div class="edit-group">
+          <label class="edit-label">Rating</label>
+          <select class="edit-input" id="new-rating">
+            <option value="Conservative">Conservative</option>
+            <option value="Moderate" selected>Moderate</option>
+            <option value="Aggressive">Aggressive</option>
+          </select>
+        </div>
+        <div class="edit-group full">
+          <label class="edit-label">Notes (optional)</label>
+          <input class="edit-input" id="new-notes" type="text" placeholder="Any additional context" />
+        </div>
+      </div>
+      <button class="save-btn" onclick="addItem()">Add Line Item</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <strong>Industry Real Estate Partners</strong><br>
+  5901 Peachtree Dunwoody Rd, Suite B-350 · Atlanta, GA<br>
+  Estimates are for planning purposes only. Actual costs may vary.
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────
+let items = [
+  {
+    id: 1, area: 'Bldg 200', sf: 9418, desc: 'CAD File',
+    mode: 'psf', psfRate: 0.10, fixedAmt: null,
+    rating: 'Moderate',
+    notes: 'Measure interior building layout and transmit to CAD file for accurate dimensions and accurate design work'
+  },
+  {
+    id: 2, area: 'Office Space', sf: 1714, desc: 'Design Fees',
+    mode: 'psf', psfRate: 0.42, fixedAmt: null,
+    rating: 'Moderate',
+    notes: "Design the layout of client's desired space for contractor pricing estimate"
+  },
+  {
+    id: 3, area: 'Bldg 200', sf: 9418, desc: 'MEP & Construction Documents',
+    mode: 'psf', psfRate: 3.00, fixedAmt: null,
+    rating: 'Conservative',
+    notes: 'Mechanical electrical plumbing documents required for permitting'
+  },
+  {
+    id: 4, area: 'Office Space', sf: 1714, desc: 'Flooring, Paint & Wall/Ceiling Covering',
+    mode: 'psf', psfRate: 10.00, fixedAmt: null,
+    rating: 'Moderate',
+    notes: 'High end floor and drywall/paint work'
+  },
+  {
+    id: 5, area: 'Office Space', sf: 1714, desc: 'Miscellaneous Upgrades',
+    mode: 'psf', psfRate: 7.50, fixedAmt: null,
+    rating: 'Conservative',
+    notes: 'Miscellaneous upgrades in the existing office space'
+  },
+  {
+    id: 6, area: 'Bathroom 1', sf: null, desc: 'Renovate Finishes, New Fixtures & Lighting',
+    mode: 'fixed', psfRate: null, fixedAmt: 3000,
+    rating: 'Conservative',
+    notes: 'Renovate finishes and fixtures'
+  },
+  {
+    id: 7, area: 'Bathroom 2', sf: null, desc: 'Renovate Finishes, New Fixtures & Lighting',
+    mode: 'fixed', psfRate: null, fixedAmt: 3000,
+    rating: 'Conservative',
+    notes: 'Renovate finishes and fixtures'
+  },
+  {
+    id: 8, area: 'Bathroom 3', sf: null, desc: 'Renovate Finishes, New Fixtures & Lighting',
+    mode: 'fixed', psfRate: null, fixedAmt: 3000,
+    rating: 'Conservative',
+    notes: 'Renovate finishes and fixtures'
+  },
+  {
+    id: 9, area: 'Retail / Showroom', sf: 4400, desc: 'Add New Offices & Reconfigure',
+    mode: 'psf', psfRate: 25.00, fixedAmt: null,
+    rating: 'Moderate',
+    notes: "Drywall to the 15' ceiling, electrical and mechanical work for lighting and HVAC, glass inserts"
+  },
+  {
+    id: 10, area: 'Bldg 200', sf: 9418, desc: 'Contingency Buffer',
+    mode: 'psf', psfRate: 5.00, fixedAmt: null,
+    rating: 'Conservative',
+    notes: 'Buffer for additions or unexpected labor costs'
+  },
+  {
+    id: 11, area: 'Building Exterior', sf: null, desc: 'Signage — Remove Existing & Add New',
+    mode: 'fixed', psfRate: null, fixedAmt: 5000,
+    rating: 'Moderate',
+    notes: 'Estimate confidence is lower — actual cost may vary'
+  }
+];
+
+let nextId = 20;
+const BLDG_RSF = 13603;
+
+// ── HELPERS ───────────────────────────────────────────────────────────
+function itemCost(item) {
+  if (item.mode === 'psf' && item.sf && item.psfRate) return item.sf * item.psfRate;
+  if (item.mode === 'fixed' && item.fixedAmt) return item.fixedAmt;
+  return 0;
+}
+
+function fmt(n) {
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+
+function ratingClass(r) {
+  return r ? r.toLowerCase() : 'moderate';
+}
+
+function grandTotal() {
+  return items.reduce((s, i) => s + itemCost(i), 0);
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────
+function render() {
+  renderTotal();
+  renderItems();
+  renderChart();
+}
+
+function renderTotal() {
+  const total = grandTotal();
+  document.getElementById('grandTotal').textContent = fmt(total);
+  document.getElementById('grandTotalPsf').textContent =
+    fmt(total / BLDG_RSF) + ' per SF  ·  13,603 RSF Building';
+}
+
+function renderItems() {
+  const container = document.getElementById('itemsContainer');
+  const openIds = Array.from(document.querySelectorAll('.item-card.open')).map(el => +el.dataset.id);
+  container.innerHTML = '';
+  items.forEach(item => {
+    const cost = itemCost(item);
+    const isOpen = openIds.includes(item.id);
+    const el = document.createElement('div');
+    el.className = 'item-card' + (isOpen ? ' open' : '');
+    el.dataset.id = item.id;
+
+    const metaParts = [];
+    if (item.area) metaParts.push(item.area);
+    if (item.mode === 'psf' && item.sf) metaParts.push(item.sf.toLocaleString() + ' SF');
+
+    el.innerHTML = `
+      <div class="item-header" onclick="toggleCard(${item.id})">
+        <div class="item-left">
+          <div class="item-desc">${item.desc}</div>
+          <div class="item-meta">${metaParts.join(' · ')}</div>
+          <span class="rating-chip ${ratingClass(item.rating)}">${item.rating || 'Moderate'}</span>
+        </div>
+        <div class="item-right">
+          <div class="item-cost">${fmt(cost)}</div>
+        </div>
+        <div class="expand-icon">▾</div>
+      </div>
+      <div class="edit-panel">
+        <div class="edit-row">
+          <div class="edit-group full">
+            <label class="edit-label">Description</label>
+            <input class="edit-input" data-field="desc" data-id="${item.id}" value="${item.desc}" type="text" />
+          </div>
+        </div>
+        <div class="edit-row">
+          <div class="edit-group">
+            <label class="edit-label">Area / Zone</label>
+            <input class="edit-input" data-field="area" data-id="${item.id}" value="${item.area || ''}" type="text" />
+          </div>
+          <div class="edit-group">
+            <label class="edit-label">Cost Mode</label>
+            <select class="edit-input" data-field="mode" data-id="${item.id}" onchange="modeChanged(${item.id},this.value)">
+              <option value="psf" ${item.mode==='psf'?'selected':''}>$/SF Rate</option>
+              <option value="fixed" ${item.mode==='fixed'?'selected':''}>Fixed Amount</option>
+            </select>
+          </div>
+        </div>
+        <div class="edit-row" id="psf-row-${item.id}" style="${item.mode==='psf'?'':'display:none;'}">
+          <div class="edit-group">
+            <label class="edit-label">SF</label>
+            <input class="edit-input" data-field="sf" data-id="${item.id}" value="${item.sf || ''}" type="number" inputmode="numeric" />
+          </div>
+          <div class="edit-group">
+            <label class="edit-label">$/SF Rate</label>
+            <input class="edit-input" data-field="psfRate" data-id="${item.id}" value="${item.psfRate || ''}" type="number" step="0.01" inputmode="decimal" />
+          </div>
+        </div>
+        <div class="edit-row" id="fixed-row-${item.id}" style="${item.mode==='fixed'?'':'display:none;'}">
+          <div class="edit-group">
+            <label class="edit-label">Fixed Amount ($)</label>
+            <input class="edit-input" data-field="fixedAmt" data-id="${item.id}" value="${item.fixedAmt || ''}" type="number" step="100" inputmode="numeric" />
+          </div>
+        </div>
+        <div class="edit-row">
+          <div class="edit-group">
+            <label class="edit-label">Estimate Rating</label>
+            <select class="edit-input" data-field="rating" data-id="${item.id}">
+              <option value="Conservative" ${item.rating==='Conservative'?'selected':''}>Conservative</option>
+              <option value="Moderate" ${item.rating==='Moderate'?'selected':''}>Moderate</option>
+              <option value="Aggressive" ${item.rating==='Aggressive'?'selected':''}>Aggressive</option>
+            </select>
+          </div>
+        </div>
+        <div class="notes-text">${item.notes || ''}</div>
+        <button class="delete-btn" onclick="deleteItem(${item.id})">✕ Remove This Line Item</button>
+      </div>
+    `;
+    container.appendChild(el);
+  });
+
+  // Attach live-update listeners
+  document.querySelectorAll('.edit-input[data-field]').forEach(input => {
+    input.addEventListener('input', function() {
+      liveUpdate(+this.dataset.id, this.dataset.field, this.value);
+    });
+    input.addEventListener('change', function() {
+      liveUpdate(+this.dataset.id, this.dataset.field, this.value);
+    });
+  });
+}
+
+const PIE_COLORS = [
+  '#0057b8','#1a6fc4','#2d84d4','#4a9de0','#0040a0',
+  '#5b6770','#25282a','#7a8a94','#3a6090','#89b0d4',
+  '#c1c6c8'
+];
+
+function renderChart() {
+  const chart = document.getElementById('summaryChart');
+  chart.innerHTML = '';
+
+  const total = grandTotal();
+  if (total === 0) return;
+
+  const sorted = [...items].sort((a, b) => itemCost(b) - itemCost(a));
+
+  // Wrapper
+  const wrap = document.createElement('div');
+  wrap.className = 'pie-wrap';
+
+  // Canvas donut
+  const canvasWrap = document.createElement('div');
+  canvasWrap.className = 'pie-canvas-wrap';
+
+  const canvas = document.createElement('canvas');
+  const SIZE = 200;
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  canvasWrap.appendChild(canvas);
+
+  // Center label
+  const centerLabel = document.createElement('div');
+  centerLabel.className = 'pie-center-label';
+  centerLabel.innerHTML = `<div class="pcl-amount">${fmt(total)}</div><div class="pcl-label">Total</div>`;
+  canvasWrap.appendChild(centerLabel);
+
+  wrap.appendChild(canvasWrap);
+
+  // Draw pie
+  const ctx = canvas.getContext('2d');
+  const cx = SIZE / 2, cy = SIZE / 2, r = 90, inner = 54;
+  let angle = -Math.PI / 2;
+
+  sorted.forEach((item, i) => {
+    const cost = itemCost(item);
+    if (!cost) return;
+    const slice = (cost / total) * 2 * Math.PI;
+    const color = PIE_COLORS[i % PIE_COLORS.length];
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, angle, angle + slice);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    angle += slice;
+  });
+
+  // Donut hole
+  ctx.beginPath();
+  ctx.arc(cx, cy, inner, 0, 2 * Math.PI);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+
+  // Legend
+  const legend = document.createElement('div');
+  legend.className = 'pie-legend';
+
+  sorted.forEach((item, i) => {
+    const cost = itemCost(item);
+    if (!cost) return;
+    const pct = ((cost / total) * 100).toFixed(1);
+    const color = PIE_COLORS[i % PIE_COLORS.length];
+    const labelText = item.area ? item.area + ' – ' + item.desc : item.desc;
+
+    const row = document.createElement('div');
+    row.className = 'legend-row';
+    row.innerHTML = `
+      <div class="legend-swatch" style="background:${color}"></div>
+      <div class="legend-desc" title="${labelText}">${labelText}</div>
+      <div class="legend-pct">${pct}%</div>
+      <div class="legend-amt">${fmt(cost)}</div>
+    `;
+    legend.appendChild(row);
+  });
+
+  wrap.appendChild(legend);
+  chart.appendChild(wrap);
+}
+
+// ── INTERACTIONS ──────────────────────────────────────────────────────
+function toggleCard(id) {
+  const card = document.querySelector(`.item-card[data-id="${id}"]`);
+  card.classList.toggle('open');
+}
+
+function modeChanged(id, newMode) {
+  const psfRow = document.getElementById(`psf-row-${id}`);
+  const fixedRow = document.getElementById(`fixed-row-${id}`);
+  if (newMode === 'psf') { psfRow.style.display = ''; fixedRow.style.display = 'none'; }
+  else { psfRow.style.display = 'none'; fixedRow.style.display = ''; }
+  liveUpdate(id, 'mode', newMode);
+}
+
+function liveUpdate(id, field, value) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  if (field === 'sf' || field === 'psfRate' || field === 'fixedAmt') {
+    item[field] = parseFloat(value) || null;
+  } else if (field === 'mode') {
+    item.mode = value;
+  } else {
+    item[field] = value;
+  }
+  renderTotal();
+  renderChart();
+  // Update cost display in this card's header
+  const costEl = document.querySelector(`.item-card[data-id="${id}"] .item-cost`);
+  if (costEl) costEl.textContent = fmt(itemCost(item));
+}
+
+function deleteItem(id) {
+  items = items.filter(i => i.id !== id);
+  render();
+  showToast('Line item removed');
+}
+
+function toggleAdd() {
+  document.getElementById('addCard').classList.toggle('open');
+}
+
+function toggleNewMode() {
+  const mode = document.getElementById('new-mode').value;
+  document.getElementById('new-psf-group').style.display = mode === 'psf' ? '' : 'none';
+  document.getElementById('new-fixed-group').style.display = mode === 'fixed' ? '' : 'none';
+}
+
+function addItem() {
+  const desc = document.getElementById('new-desc').value.trim();
+  if (!desc) { showToast('Please enter a description'); return; }
+  const mode = document.getElementById('new-mode').value;
+  const sf = parseFloat(document.getElementById('new-sf').value) || null;
+  const psfRate = parseFloat(document.getElementById('new-psf-val').value) || null;
+  const fixedAmt = parseFloat(document.getElementById('new-fixed-val').value) || null;
+
+  if (mode === 'psf' && (!sf || !psfRate)) { showToast('Enter SF and $/SF rate'); return; }
+  if (mode === 'fixed' && !fixedAmt) { showToast('Enter a fixed amount'); return; }
+
+  items.push({
+    id: nextId++,
+    area: document.getElementById('new-area').value.trim(),
+    sf, desc, mode, psfRate, fixedAmt,
+    rating: document.getElementById('new-rating').value,
+    notes: document.getElementById('new-notes').value.trim()
+  });
+
+  // Reset form
+  ['new-desc','new-area','new-sf','new-psf-val','new-fixed-val','new-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('addCard').classList.remove('open');
+  render();
+  showToast('Line item added ✓');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
